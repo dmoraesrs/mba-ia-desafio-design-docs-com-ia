@@ -15,7 +15,7 @@ Os webhooks são somente de saída: a plataforma notifica o cliente, o cliente n
 2. **Secret única por endpoint de webhook**, nunca uma secret global da plataforma ([09:21] Sofia). A configuração do webhook guarda url, secret, customer_id e estado ativo ([09:21] Bruno, [09:21] Sofia).
 3. **A secret é gerada pela plataforma e devolvida na criação do webhook** ([09:31] Marcos).
 4. **Rotação pela API**, com a secret anterior válida por 24 horas em paralelo; depois disso ela deixa de valer ([09:21] Sofia, [09:22] Sofia).
-5. **TLS obrigatório**: URL precisa ser `https`; `http` é recusado com erro de validação no schema Zod ([09:23] Sofia).
+5. **TLS obrigatório**: URL precisa ser `https`; `http` é recusado com erro de validação, definido como regra de schema Zod ([09:23] Sofia). O código de erro devolvido é `WEBHOOK_INVALID_URL`, seguindo o padrão de códigos do módulo ([09:28] Bruno); a forma de aplicar está no [FDD](../FDD.md#7-matriz-de-erros).
 6. **Revisão de segurança dedicada** do código de HMAC e de geração de secret, com pelo menos dois dias úteis antes do deploy ([09:46] Sofia, [09:47] Larissa).
 
 ## Alternativas consideradas
@@ -35,6 +35,6 @@ Os webhooks são somente de saída: a plataforma notifica o cliente, o cliente n
 
 **Negativas / trade-offs**
 - A plataforma precisa guardar a secret de forma recuperável para assinar (não dá para guardar só hash), o que aumenta o cuidado com o armazenamento. A forma de proteção em repouso não foi discutida e fica para a revisão da Sofia.
-- Durante as 24 h de grace period, não foi definido como o envio é assinado (com a secret nova, com a antiga ou com ambas). Registrado como questão em aberto no [RFC](../RFC.md#questões-em-aberto).
+- Durante as 24 h de grace period, não foi definido como o envio é assinado (com a secret nova, com a antiga ou com ambas). Registrado como questão em aberto no [RFC](../RFC.md#5-questões-em-aberto).
 - A assinatura cobre só o corpo; o `X-Timestamp` não é assinado, o que limita a proteção contra replay do lado do cliente (ver [ADR-007](ADR-007-payload-enxuto-com-snapshot-na-insercao.md)).
 - Trade-off aceito: complexidade de gestão de secrets por endpoint em troca de isolamento de vazamentos.

@@ -1,6 +1,6 @@
 # ADR-003: Retry com backoff exponencial fixo e DLQ em tabela separada
 
-- **Status:** Aceito
+- **Status:** Aceito (contagem exata de tentativas pendente de confirmação, RFC Q-04)
 - **Data da decisão:** reunião técnica de quinta-feira, 09:00 (registrada em `TRANSCRICAO.md`)
 - **Decisores:** Larissa (Tech Lead), Diego (Plataforma), Bruno (Pedidos), Sofia (Segurança), Marcos (Produto)
 - **Relacionados:** [ADR-002](ADR-002-worker-separado-em-polling.md), [ADR-005](ADR-005-entrega-at-least-once-com-x-event-id.md)
@@ -12,12 +12,12 @@ O endpoint do cliente pode estar fora do ar ou lento. Já houve cliente com indi
 ## Decisão
 
 1. **Backoff exponencial com progressão fixa 1 min, 5 min, 30 min, 2 h, 12 h** ([09:17] Diego, [09:17] Larissa). A janela é de quase 15 horas entre a primeira falha e a última tentativa ([09:17] Diego), aceita pelo produto ([09:17] Marcos).
-2. **Teto de 5 tentativas**, depois falha permanente ([09:15] Diego, [09:16] Larissa, [09:48] Larissa). Ver a nota de interpretação abaixo.
+2. **Teto de "5 tentativas"**, depois falha permanente ([09:15] Diego, [09:16] Larissa, [09:48] Larissa). Como a progressão tem 5 intervalos, este pacote implementa 1 envio inicial + 5 retentativas; essa leitura está **pendente de confirmação** (ver nota abaixo).
 3. **Timeout de 10 segundos** por chamada HTTP; sem resposta nesse prazo, conta como falha e vai para retry ([09:42] Diego).
 4. **DLQ em tabela separada `webhook_dead_letter`**, com payload, motivo da falha e timestamp, para manter a leitura da outbox limpa e servir de evidência para debug e reprocessamento ([09:18] Diego).
 5. **Reprocessamento manual** por `POST /admin/webhooks/dead-letter/:id/replay`, que recoloca o evento na outbox como pendente ([09:18] Diego, [09:35] Diego). Exige role `ADMIN` via `requireRole` existente e registra quem fez o replay ([09:36] Sofia, [09:36] Larissa).
 
-**Nota de interpretação (pendente de confirmação).** A reunião diz "5 tentativas" e lista 5 intervalos, somando cerca de 14 h 36 min "entre primeira falha e última tentativa" ([09:17] Diego). As duas falas só fecham se os 5 intervalos forem as esperas entre o envio inicial e as 5 retentativas, ou seja, 1 envio inicial mais 5 retentativas. Este pacote adota essa leitura e a registra como questão em aberto no [RFC](../RFC.md#questões-em-aberto) para confirmação com Larissa e Diego.
+**Nota de interpretação.** A justificativa da leitura "1 + 5" e o pedido de confirmação estão na questão Q-04 do [RFC](../RFC.md#5-questões-em-aberto).
 
 ## Alternativas consideradas
 

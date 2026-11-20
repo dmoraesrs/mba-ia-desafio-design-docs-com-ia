@@ -13,8 +13,8 @@ Com a outbox definida ([ADR-001](ADR-001-outbox-no-mysql.md)), falta decidir com
 
 1. **Polling em loop a cada 2 segundos**: o worker busca os eventos pendentes mais antigos em lote pequeno, processa e marca o resultado ([09:09] Diego, [09:08] Diego, [09:10] Larissa). Latência mínima de 2 segundos no pior caso, aceita explicitamente ([09:10] Larissa, [09:10] Marcos).
 2. **Processo separado da API**: se a API reinicia, o worker não pode morrer junto ([09:11] Diego). Nova entry-point `src/worker.ts`, nos moldes de `src/server.ts`, com script `npm run worker` ([09:11] Larissa). A lógica de processamento fica dentro do módulo, em `src/modules/webhooks/webhook.worker.ts` ou `webhook.processor.ts` ([09:28] Bruno).
-3. **Mesmo banco, mesma stack, instância própria de PrismaClient**: mesma `DATABASE_URL`, mas um `PrismaClient` novo, porque cliente Prisma é por processo ([09:11] Bruno, [09:11] Diego, [09:30] Bruno).
-4. **Instância única (single-worker)**: o worker processa em ordem de `created_at`, o que dá ordenação implícita por `order_id`. Não há garantia de ordenação global, e a garantia por pedido só vale enquanto houver um único worker; isso é limitação conhecida ([09:12] Diego, [09:13] Larissa, [09:14] Marcos).
+3. **Mesmo banco, mesma stack, instância própria de PrismaClient**: mesma `DATABASE_URL`, mas um `PrismaClient` novo, porque cliente Prisma é por processo ([09:11] Diego, [09:30] Bruno).
+4. **Instância única (single-worker)**: o worker processa em ordem de `created_at`, o que dá ordenação implícita por `order_id`. Não há garantia de ordenação global, e a garantia por pedido só vale enquanto houver um único worker; isso é limitação conhecida ([09:12] Diego, [09:13] Larissa, [09:14] Marcos). Ressalva identificada no detalhamento: enquanto um evento está em backoff, o evento seguinte do mesmo pedido pode ser entregue antes (RFC Q-10).
 
 ## Alternativas consideradas
 
