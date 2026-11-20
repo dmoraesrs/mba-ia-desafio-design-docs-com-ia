@@ -75,6 +75,8 @@ Contratos, schema das tabelas, matriz de erros e fluxos passo a passo estão no 
 | Q-07 | **Endurecer permissões do CRUD** de webhooks (hoje qualquer role autenticada). | "Mais pra frente". | [09:37] Sofia |
 | Q-08 | **Proteção da secret em repouso**: ela precisa ser recuperável para assinar; a forma (criptografia, KMS, etc.) não foi discutida. | Levar para a revisão de segurança. | [09:21] Bruno, [09:46] Sofia |
 | Q-09 | **Classificação de respostas**: a reunião só tratou timeout e cliente offline como falha; não definiu se respostas 4xx devem ser retentadas. O FDD trata qualquer não 2xx como falha retentável. | Confirmar. | [09:14] Larissa, [09:42] Diego |
+| Q-10 | **Ordenação durante retry**: a garantia "por `order_id`, single-worker" pressupõe envio em ordem de `created_at`, mas um evento em backoff não bloqueia o evento seguinte do mesmo pedido, que pode chegar antes. Bloquear os seguintes (head-of-line) ou aceitar e documentar? | Não discutido; o FDD documenta a limitação. | [09:12] Diego, [09:13] Larissa |
+| Q-11 | **Evento na criação do pedido**: `OrderService.create` grava histórico `null → PENDING`, mas a reunião só tratou `changeStatus`. Criação deve gerar evento? | Não discutido; fora do escopo até decisão. | [09:40] Bruno |
 
 ## 6. Impacto e riscos
 
