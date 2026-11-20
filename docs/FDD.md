@@ -5,7 +5,7 @@
 | **Status** | Pronto para implementação (pendente das questões em aberto do RFC) |
 | **Data** | 2026-11-19 |
 | **Responsáveis técnicos** | Bruno (Pedidos), Diego (Plataforma); revisão de segurança: Sofia |
-| **Base** | [RFC](RFC.md), [ADRs](adrs/README.md), `TRANSCRICAO.md`, código em `src/` e `prisma/` |
+| **Base** | [RFC](RFC.md), [ADRs](adrs/), `TRANSCRICAO.md`, código em `src/` e `prisma/` |
 
 Convenções deste documento:
 - Citações `[hh:mm] Nome` apontam para `TRANSCRICAO.md`; caminhos apontam para arquivos do repositório.

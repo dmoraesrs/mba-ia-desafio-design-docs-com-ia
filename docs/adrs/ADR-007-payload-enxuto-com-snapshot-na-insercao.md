@@ -1,9 +1,12 @@
 # ADR-007: Payload enxuto, renderizado como snapshot na inserção da outbox
 
-- **Status:** Aceito
 - **Data da decisão:** reunião técnica de quinta-feira, 09:00, incluindo a conversa após a saída de Marcos e Sofia (registrada em `TRANSCRICAO.md`)
 - **Decisores:** Diego (Plataforma), Larissa (Tech Lead), Bruno (Pedidos), Sofia (Segurança)
 - **Relacionados:** [ADR-001](ADR-001-outbox-no-mysql.md), [ADR-004](ADR-004-assinatura-hmac-sha256-com-secret-por-endpoint.md), [ADR-005](ADR-005-entrega-at-least-once-com-x-event-id.md)
+
+## Status
+
+Aceito
 
 ## Contexto
 

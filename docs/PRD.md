@@ -6,7 +6,7 @@
 | **Tech Lead** | Larissa |
 | **Status** | Aprovado na reunião técnica; em detalhamento |
 | **Data** | 2026-11-19 |
-| **Documentos relacionados** | [RFC](RFC.md) · [FDD](FDD.md) · [ADRs](adrs/README.md) · [Tracker](TRACKER.md) |
+| **Documentos relacionados** | [RFC](RFC.md) · [FDD](FDD.md) · [ADRs](adrs/) · [Tracker](TRACKER.md) |
 
 ## 1. Resumo e contexto
 

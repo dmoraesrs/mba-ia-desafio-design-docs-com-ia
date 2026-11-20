@@ -6,7 +6,7 @@
 | **Status** | Em revisão |
 | **Data** | 2026-11-19 |
 | **Revisores** | Diego (Plataforma), Bruno (Pedidos), Sofia (Segurança), Marcos (Produto) |
-| **Documentos relacionados** | [PRD](PRD.md), [FDD](FDD.md), [ADRs](adrs/README.md), [Tracker](TRACKER.md) |
+| **Documentos relacionados** | [PRD](PRD.md), [FDD](FDD.md), [ADRs](adrs/), [Tracker](TRACKER.md) |
 
 ## 1. Resumo (TL;DR)
 

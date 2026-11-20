@@ -1,9 +1,12 @@
 # ADR-006: Reuso máximo dos padrões existentes do projeto
 
-- **Status:** Aceito
 - **Data da decisão:** reunião técnica de quinta-feira, 09:00 (registrada em `TRANSCRICAO.md`)
 - **Decisores:** Larissa (Tech Lead), Bruno (Pedidos), Diego (Plataforma), Sofia (Segurança)
 - **Relacionados:** [ADR-001](ADR-001-outbox-no-mysql.md), [ADR-002](ADR-002-worker-separado-em-polling.md)
+
+## Status
+
+Aceito
 
 ## Contexto
 

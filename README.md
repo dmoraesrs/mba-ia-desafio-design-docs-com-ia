@@ -111,7 +111,7 @@ Foram **4 iterações principais**: rascunho guiado por ADRs; ajustes durante o 
 | --- | --- | --- |
 | 1 | [`docs/PRD.md`](docs/PRD.md) | Por que e o quê: problema, público, metas, escopo, requisitos |
 | 2 | [`docs/RFC.md`](docs/RFC.md) | Proposta técnica, alternativas descartadas e questões em aberto |
-| 3 | [`docs/adrs/`](docs/adrs/README.md) | Uma decisão por arquivo (ADR-001 a ADR-007), com alternativas e consequências |
+| 3 | [`docs/adrs/`](docs/adrs/) | Uma decisão por arquivo (ADR-001 a ADR-007), com alternativas e consequências |
 | 4 | [`docs/FDD.md`](docs/FDD.md) | Como construir: modelo de dados, fluxos, contratos, erros, observabilidade, integração com o código |
 | 5 | [`docs/TRACKER.md`](docs/TRACKER.md) | Origem de cada item: timestamp e falante, ou caminho de arquivo |
 

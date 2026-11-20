@@ -1,9 +1,12 @@
 # ADR-002: Worker em processo separado, lendo a outbox por polling
 
-- **Status:** Aceito
 - **Data da decisão:** reunião técnica de quinta-feira, 09:00 (registrada em `TRANSCRICAO.md`)
 - **Decisores:** Larissa (Tech Lead), Diego (Plataforma), Bruno (Pedidos)
 - **Relacionados:** [ADR-001](ADR-001-outbox-no-mysql.md), [ADR-003](ADR-003-retry-com-backoff-e-dlq.md), [ADR-006](ADR-006-reuso-dos-padroes-existentes.md)
+
+## Status
+
+Aceito
 
 ## Contexto
 

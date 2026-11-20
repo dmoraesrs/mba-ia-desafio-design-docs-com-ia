@@ -1,9 +1,12 @@
 # ADR-004: Assinatura HMAC-SHA256 com secret única por endpoint e rotação com grace period
 
-- **Status:** Aceito
 - **Data da decisão:** reunião técnica de quinta-feira, 09:00 (registrada em `TRANSCRICAO.md`)
 - **Decisores:** Sofia (Segurança), Larissa (Tech Lead), Diego (Plataforma)
 - **Relacionados:** [ADR-005](ADR-005-entrega-at-least-once-com-x-event-id.md), [ADR-007](ADR-007-payload-enxuto-com-snapshot-na-insercao.md)
+
+## Status
+
+Aceito
 
 ## Contexto
 

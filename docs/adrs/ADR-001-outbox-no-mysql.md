@@ -1,9 +1,12 @@
 # ADR-001: Padrão Outbox no MySQL existente
 
-- **Status:** Aceito
 - **Data da decisão:** reunião técnica de quinta-feira, 09:00 (registrada em `TRANSCRICAO.md`)
 - **Decisores:** Larissa (Tech Lead), Diego (Plataforma), Bruno (Pedidos)
 - **Relacionados:** [ADR-002](ADR-002-worker-separado-em-polling.md), [ADR-005](ADR-005-entrega-at-least-once-com-x-event-id.md), [ADR-006](ADR-006-reuso-dos-padroes-existentes.md)
+
+## Status
+
+Aceito
 
 ## Contexto
 

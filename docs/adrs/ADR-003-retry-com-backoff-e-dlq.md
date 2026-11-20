@@ -1,9 +1,12 @@
 # ADR-003: Retry com backoff exponencial fixo e DLQ em tabela separada
 
-- **Status:** Aceito (contagem exata de tentativas pendente de confirmação, RFC Q-04)
 - **Data da decisão:** reunião técnica de quinta-feira, 09:00 (registrada em `TRANSCRICAO.md`)
 - **Decisores:** Larissa (Tech Lead), Diego (Plataforma), Bruno (Pedidos), Sofia (Segurança), Marcos (Produto)
 - **Relacionados:** [ADR-002](ADR-002-worker-separado-em-polling.md), [ADR-005](ADR-005-entrega-at-least-once-com-x-event-id.md)
+
+## Status
+
+Aceito (contagem exata de tentativas pendente de confirmação, RFC Q-04)
 
 ## Contexto
 
