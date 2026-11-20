@@ -23,26 +23,18 @@ O OMS não tem nenhum mecanismo de eventos, filas ou notificação externa. A mu
 ### 3.1 Visão geral
 
 ```
- API (src/server.ts)                          Worker (src/worker.ts, novo)
- ┌───────────────────────────────┐            ┌───────────────────────────────┐
- │ PATCH /orders/:id/status      │            │ a cada 2 s: lê pendentes      │
- │  └ changeStatus ($transaction)│            │  ├ assina (HMAC-SHA256)       │
- │     ├ update orders           │            │  ├ POST https (timeout 10 s)  │
- │     ├ insert history          │   MySQL    │  ├ sucesso → entregue         │
- │     ├ estoque                 │ ─────────▶ │  ├ falha → reagenda (backoff) │
- │     └ publishWebhookEvent(tx) │ webhook_   │  └ esgotou → dead letter      │
- │ CRUD /webhooks, deliveries    │ outbox     │                               │
- │ POST /admin/.../replay (ADMIN)│            │                               │
- └───────────────────────────────┘            └───────────────┬───────────────┘
-                                                              ▼
-                                                  Endpoint HTTPS do cliente
+ ┌──────────────────────┐  mesma transação  ┌──────────────┐  polling 2 s  ┌──────────────┐  HTTPS + HMAC  ┌──────────┐
+ │ API: mudança de      │ ────────────────▶ │ MySQL:       │ ────────────▶ │ Worker       │ ─────────────▶ │ Cliente  │
+ │ status do pedido     │                   │ outbox       │               │ (processo    │                └──────────┘
+ └──────────────────────┘                   └──────────────┘ ◀──────────── │  separado)   │
+                                                             retry / DLQ   └──────────────┘
 ```
 
 ### 3.2 Componentes
 
-1. **Outbox transacional** ([ADR-001](adrs/ADR-001-outbox-no-mysql.md)). `changeStatus` chama `publishWebhookEvent(tx, ...)` dentro da transação existente. A função consulta os webhooks ativos do cliente, filtra pelos status assinados e grava uma linha por destino com o payload já renderizado ([ADR-007](adrs/ADR-007-payload-enxuto-com-snapshot-na-insercao.md)). Se a gravação falhar, o status não muda.
-2. **Worker** ([ADR-002](adrs/ADR-002-worker-separado-em-polling.md)). Processo Node próprio, mesmo banco e mesma stack, polling de 2 s, instância única para preservar a ordem por pedido.
-3. **Resiliência** ([ADR-003](adrs/ADR-003-retry-com-backoff-e-dlq.md)). Timeout de 10 s, backoff fixo, DLQ em tabela própria, replay manual por administrador.
+1. **Outbox transacional** ([ADR-001](adrs/ADR-001-outbox-no-mysql.md)). A mudança de status grava o evento, já filtrado pelos status que o cliente assina e com o payload congelado ([ADR-007](adrs/ADR-007-payload-enxuto-com-snapshot-na-insercao.md)), na mesma transação. Se a gravação falhar, o status não muda.
+2. **Worker** ([ADR-002](adrs/ADR-002-worker-separado-em-polling.md)). Processo Node próprio, mesmo banco e mesma stack, polling de 2 s, instância única para preservar a ordem por pedido (com a ressalva de Q-10).
+3. **Resiliência** ([ADR-003](adrs/ADR-003-retry-com-backoff-e-dlq.md)). Timeout por chamada, backoff com progressão fixa, DLQ em tabela própria, replay manual por administrador.
 4. **Segurança** ([ADR-004](adrs/ADR-004-assinatura-hmac-sha256-com-secret-por-endpoint.md)). HTTPS obrigatório, HMAC-SHA256 do corpo, secret gerada pela plataforma por endpoint, rotação com 24 h de convivência.
 5. **Semântica de entrega** ([ADR-005](adrs/ADR-005-entrega-at-least-once-com-x-event-id.md)). At-least-once; deduplicação pelo cliente via `X-Event-Id`.
 6. **API de configuração**. CRUD de webhooks e histórico de entregas para qualquer usuário autenticado; replay da DLQ restrito a `ADMIN` ([09:36] Sofia, [09:37] Sofia).
@@ -86,7 +78,7 @@ Contratos, schema das tabelas, matriz de erros e fluxos passo a passo estão no 
 - Novo processo (`npm run worker`) para implantar e monitorar.
 - Nenhuma mudança de contrato nos endpoints atuais.
 
-**Riscos principais** (tabela completa com probabilidade e mitigação no [PRD](PRD.md#10-riscos-e-mitigação) e no [FDD](FDD.md#11-riscos-e-mitigação))
+**Riscos principais** (tabela completa com probabilidade e mitigação no [PRD](PRD.md#10-riscos-e-mitigação) e no [FDD](FDD.md#13-riscos-e-mitigação))
 - Aumento de latência ou contenção na transação de status.
 - Worker parado sem alarme, acumulando pendentes.
 - Clientes sem deduplicação processando eventos duplicados.
