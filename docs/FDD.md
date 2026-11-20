@@ -218,10 +218,10 @@ src/worker.ts (bootstrap)
 | 5 | 12 h | 14 h 36 min |
 | 6 | (sem nova tentativa) → DLQ | |
 
-- Progressão e teto conforme [09:17] Larissa; a leitura "1 envio inicial + 5 retentativas" é a interpretação registrada no [ADR-003](adrs/ADR-003-retry-com-backoff-e-dlq.md) e na RFC Q-04.
+- Progressão conforme [09:17] Larissa. A tabela implementa 1 envio inicial + 5 retentativas, leitura pendente de confirmação (RFC Q-04).
 - Implementação: `BACKOFF_MS = [60_000, 300_000, 1_800_000, 7_200_000, 43_200_000]`; em cada falha, `attempts += 1`; se `attempts <= BACKOFF_MS.length`, `nextAttemptAt = now + BACKOFF_MS[attempts - 1]` e `status = PENDING`; senão, DLQ.
 - Conta como falha: timeout de 10 s ([09:42] Diego), erro de rede e qualquer status fora de 2xx **(proposta, RFC Q-09)**.
-- O backoff é fixo, sem jitter: com um único worker, não há tempestade de retentativas a evitar.
+- Sem jitter **(proposta)**: a reunião não tratou do tema, e com um único worker não há tempestade de retentativas a evitar.
 
 ### 5.4 DLQ e replay
 
@@ -373,7 +373,7 @@ Semântica: a secret atual vira `previousSecret`, com validade de 24 h; uma nova
 
 ### 6.6 `GET /api/v1/webhooks/:id/deliveries`: histórico de entregas
 
-Origem: [09:34] Marcos. Retorna as 100 tentativas mais recentes, da mais nova para a mais antiga.
+Origem: [09:34] Marcos. Retorna as 100 tentativas de envio mais recentes (cada retentativa é um envio e conta como um item), da mais nova para a mais antiga.
 
 Response `200 OK`:
 ```json
@@ -476,6 +476,8 @@ Geração de secret **(proposta, sujeita à revisão da Sofia)**: `crypto.random
 
 ## 7. Matriz de erros
 
+A reunião nomeou `WEBHOOK_NOT_FOUND`, `WEBHOOK_INVALID_URL` e `WEBHOOK_SECRET_REQUIRED` "etc." e fixou o prefixo ([09:28] Bruno, [09:29] Larissa). Os demais códigos da tabela são **(proposta)**, cada um derivado da regra indicada na coluna Origem.
+
 Classes novas em `src/modules/webhooks/webhook.errors.ts`, estendendo as de `src/shared/errors/http-errors.ts` (que aceitam `code` customizado em `BadRequestError`, `ConflictError` e `UnprocessableEntityError`) ou `AppError` diretamente quando a base fixa o código (caso de `NotFoundError`, que sempre usa `NOT_FOUND`).
 
 | Código | HTTP | Onde ocorre | Classe proposta | Retentável? | Origem |
@@ -499,7 +501,7 @@ Erros existentes reutilizados sem mudança: `VALIDATION_ERROR` (schemas Zod), `U
 | --- | --- | --- |
 | Isolamento | API e worker em processos distintos; falha do cliente nunca afeta a transação de status | [09:04] Bruno, [09:11] Diego |
 | Timeout | 10 s por chamada, via `AbortSignal.timeout` | [09:42] Diego |
-| Retries | 5 retentativas, backoff 1m/5m/30m/2h/12h | [09:17] Larissa |
+| Retries | Backoff 1m/5m/30m/2h/12h; contagem conforme RFC Q-04 | [09:17] Larissa |
 | Fallback | DLQ em tabela própria + replay manual por `ADMIN`. Não há fallback por e-mail nesta fase | [09:18] Diego, [09:37] Larissa |
 | Idempotência | `X-Event-Id` estável; reenvios são esperados (at-least-once) | [09:25] Diego |
 | Payload | Limite de 64 KB, falha sem truncar; aplicado no worker **(proposta, RFC Q-05)** para não bloquear mudanças de status | [09:24] Larissa |
@@ -535,7 +537,7 @@ O worker usa `logger.child({ component: 'webhook-worker' })`. Os caminhos `*.sec
 | `webhook_dead_letter_total` | `COUNT` em `webhook_dead_letter` sem `replayedAt` | Fila de intervenção manual |
 | Volume por cliente/minuto | `COUNT` em `webhook_outbox` agrupado | Insumo para a decisão de rate limiting ([09:39] Diego) |
 
-**Tracing**: o projeto não tem tracing distribuído; a correlação é feita por identificadores propagados em todos os logs. `eventId` liga o log da API (`webhook_event_enqueued`) a cada tentativa do worker, à linha de `webhook_deliveries` e ao header `X-Event-Id` que o cliente recebe, permitindo seguir um evento de ponta a ponta inclusive no lado do cliente. Na API, o log de enfileiramento também carrega o `requestId` gerado por `src/middlewares/request-logger.middleware.ts`, ligando a requisição `PATCH /orders/:id/status` aos eventos que ela gerou. Adotar OpenTelemetry fica fora desta fase pela decisão de reuso ([ADR-006](adrs/ADR-006-reuso-dos-padroes-existentes.md)).
+**Tracing**: o projeto não tem tracing distribuído; a correlação é feita por identificadores propagados em todos os logs. `eventId` liga o log da API (`webhook_event_enqueued`) a cada tentativa do worker, à linha de `webhook_deliveries` e ao header `X-Event-Id` que o cliente recebe, permitindo seguir um evento de ponta a ponta inclusive no lado do cliente. Na API, a ligação entre a requisição `PATCH /orders/:id/status` (logada com `requestId` e `path` por `src/middlewares/request-logger.middleware.ts`) e os eventos que ela gerou é feita pelo `orderId` presente nos dois logs. Propagar o `requestId` até a outbox exigiria mudar a assinatura de `changeStatus(id, input, userId)` e de `publishWebhookEvent`, o que não foi discutido; fica como melhoria possível. Adotar OpenTelemetry fica fora desta fase pela decisão de reuso ([ADR-006](adrs/ADR-006-reuso-dos-padroes-existentes.md)).
 
 ## 10. Integração com o sistema existente
 
@@ -547,7 +549,7 @@ O worker usa `logger.child({ component: 'webhook-worker' })`. Os caminhos `*.sec
 | `src/shared/errors/http-errors.ts` e `src/shared/errors/app-error.ts` | Base das classes `Webhook*Error` (seção 7). `BadRequestError`, `ConflictError` e `UnprocessableEntityError` já aceitam `code`; para 404 com código próprio, estende-se `AppError`, porque `NotFoundError` fixa `NOT_FOUND`. |
 | `src/middlewares/error.middleware.ts` | Sem alteração: o ramo `err instanceof AppError` já serializa `statusCode`, `errorCode` e `details` das novas classes ([09:29] Bruno). |
 | `src/middlewares/auth.middleware.ts` | `authenticate` em todas as rotas do módulo (como em `src/modules/orders/order.routes.ts`); `requireRole('ADMIN')` no replay, como já é feito em `src/modules/users/user.routes.ts` ([09:36] Larissa). |
-| `src/middlewares/validate.middleware.ts` | Valida body/query/params com os schemas de `src/modules/webhooks/webhook.schemas.ts`. A regra `https` vive num schema Zod exportado (`httpsUrlSchema`, [09:23] Sofia), aplicado pelo service para lançar `WEBHOOK_INVALID_URL`, porque este middleware converte toda falha de schema em `VALIDATION_ERROR`. |
+| `src/middlewares/validate.middleware.ts` | Valida body/query/params com os schemas de `src/modules/webhooks/webhook.schemas.ts`. A regra `https` vive num schema Zod exportado (`httpsUrlSchema`, [09:23] Sofia), aplicado pelo service para lançar `WEBHOOK_INVALID_URL` **(proposta)**, porque este middleware converte toda falha de schema em `VALIDATION_ERROR`. |
 | `src/routes/index.ts` | Registra `router.use('/webhooks', buildWebhookRouter(...))` e `router.use('/admin/webhooks', buildWebhookAdminRouter(...))`; o tipo `Controllers` ganha `webhooks` e `webhooksAdmin`. |
 | `src/app.ts` | `buildControllers` instancia `WebhookRepository`, `WebhookService` e os controllers, no mesmo estilo dos demais módulos. |
 | `src/server.ts` | Modelo para `src/worker.ts`: bootstrap assíncrono, `logger.fatal` em falha, `SIGINT`/`SIGTERM` com `prisma.$disconnect()` ([09:11] Larissa). |
@@ -608,9 +610,8 @@ src/modules/webhooks/
 | Transação de status mais lenta ou com mais contenção por causa da leitura de endpoints e insert na outbox | Média | Médio | Índice `(customerId, active)`; payload pequeno; medir latência de `PATCH /orders/:id/status` antes e depois |
 | Worker parado sem ninguém perceber | Média | Alto | Métrica de idade do pendente mais antigo; logs de start/stop; supervisão do processo pela infraestrutura |
 | Evento preso em `PROCESSING` após crash | Baixa | Médio | Recuperação de órfãos no boot (proposta) |
-| Cliente sem deduplicação processa evento repetido | Média | Médio | `X-Event-Id` estável; destaque no portal ([09:26] Marcos) |
-| Eventos do mesmo pedido fora de ordem durante retry | Baixa | Médio | Corpo com `from_status`, `to_status` e `timestamp`; decisão em RFC Q-10 |
-| Vazamento de secret | Baixa | Alto | Secret por endpoint, rotação, redaction no logger, revisão da Sofia ([09:21] Sofia, [09:46] Sofia) |
-| Qualquer usuário autenticado pode cadastrar webhook para qualquer cliente | Média | Alto | Aceito nesta fase ([09:37] Sofia); registrar no log `createdById`; endurecer depois (RFC Q-07) |
+| Eventos do mesmo pedido fora de ordem durante retry | Baixa | Médio | Corpo com `from_status`, `to_status` e `timestamp`; decisão em RFC Q-10 ([09:13] Larissa) |
+| Secret exposta por log ou resposta da própria plataforma | Baixa | Alto | Redaction de `*.secret` no logger; secret só nas respostas de criação e rotação; revisão da Sofia ([09:46] Sofia) |
 | Crescimento da outbox e de `webhook_deliveries` | Alta (longo prazo) | Baixo | Arquivamento planejado para depois ([09:08] Diego); índices por `createdAt` |
-| Rajada de eventos para um mesmo cliente | Média | Médio | Métrica de volume por cliente; decisão de rate limiting adiada ([09:39] Larissa) |
+
+Riscos de produto (cliente sem deduplicação, vazamento de secret pelo cliente, permissões abertas do CRUD, rajadas de eventos, prazo) estão no [PRD, seção 10](PRD.md#10-riscos-e-mitigação).
