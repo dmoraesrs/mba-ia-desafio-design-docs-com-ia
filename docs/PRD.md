@@ -10,7 +10,7 @@
 
 ## 1. Resumo e contexto
 
-O OMS passa a avisar os sistemas dos clientes B2B, por HTTP, sempre que o status de um pedido deles muda. O cliente cadastra uma URL, escolhe quais status quer receber e passa a receber notificações assinadas, sem precisar consultar a plataforma periodicamente. A feature atende a um pedido formal de três clientes e é a primeira forma de notificação externa do OMS ([09:00] Marcos).
+O OMS passa a avisar os sistemas dos clientes B2B, por HTTP, sempre que o status de um pedido deles muda. O cliente cadastra uma URL, escolhe quais status quer receber e passa a receber notificações assinadas, sem precisar consultar a plataforma periodicamente. A feature atende a um pedido formal de três clientes ([09:00] Marcos) e é a primeira forma de notificação externa do OMS: o código atual não tem eventos, filas nem chamadas de saída (`src/modules/orders/order.service.ts`).
 
 ## 2. Problema e motivação
 
@@ -25,10 +25,10 @@ O OMS passa a avisar os sistemas dos clientes B2B, por HTTP, sempre que o status
 - **Usuários da plataforma que representam o cliente**, que cadastram e mantêm os webhooks pela API com JWT do OMS ([09:32] Marcos).
 - **Administradores do OMS**, que reprocessam entregas que falharam definitivamente ([09:36] Sofia).
 
-**Cenários**
-1. *Acompanhar expedição.* A Nova Cargo quer saber só quando um pedido vira `SHIPPED` ou `DELIVERED`; cadastra um webhook com esses dois status e recebe apenas essas notificações ([09:33] Marcos).
-2. *Cliente em manutenção.* O endpoint da Atlas fica duas horas fora do ar; as notificações são retentadas automaticamente e chegam quando o endpoint volta ([09:16] Diego).
-3. *Investigar uma integração.* O time da MaxDistribuição consulta as últimas entregas para ver o que foi enviado, o que o servidor deles respondeu e quanto tempo levou ([09:34] Marcos).
+**Cenários** (os exemplos vêm da reunião; os clientes não são nomeados nas falas de origem)
+1. *Acompanhar expedição.* Um cliente quer saber só quando um pedido vira `SHIPPED` ou `DELIVERED`; cadastra um webhook com esses dois status e recebe apenas essas notificações ([09:33] Marcos).
+2. *Cliente em manutenção.* O endpoint de um cliente fica duas horas fora do ar em manutenção planejada; as notificações são retentadas automaticamente e chegam quando o endpoint volta ([09:16] Diego).
+3. *Investigar uma integração.* O time técnico de um cliente consulta as últimas entregas para ver o que foi enviado, o que o servidor deles respondeu e quanto tempo levou ([09:34] Marcos).
 4. *Secret vazada.* O cliente descobre que a secret apareceu num log; pede uma nova pela API e tem 24 horas para trocar nos seus sistemas sem perder notificações ([09:21] Sofia, [09:22] Diego).
 5. *Reprocessar falha definitiva.* Após o cliente corrigir um problema longo, um administrador reenvia o evento que estava na fila de falhas ([09:18] Diego).
 
@@ -36,7 +36,7 @@ O OMS passa a avisar os sistemas dos clientes B2B, por HTTP, sempre que o status
 
 | ID | Objetivo | Métrica | Meta | Origem |
 | --- | --- | --- | --- | --- |
-| OBJ-01 | Notificação percebida como "tempo real" | Tempo entre a mudança de status e a entrega bem-sucedida (p95, com o cliente respondendo) | **< 10 segundos** | [09:02] Marcos, [09:10] Larissa |
+| OBJ-01 | Notificação percebida como "tempo real" | Tempo entre a mudança de status e a entrega bem-sucedida, com o cliente respondendo (medido no percentil 95, critério proposto) | **< 10 segundos** | [09:02] Marcos, [09:10] Larissa |
 | OBJ-02 | Reter e ativar os clientes que pediram a feature | Clientes com webhook ativo recebendo eventos | **3 de 3** (Atlas, MaxDistribuição, Nova Cargo) | [09:00] Marcos, [09:47] Marcos |
 | OBJ-03 | Entregar no prazo combinado | Sprints até produção, com revisão de segurança incluída | **3 sprints** | [09:46] Larissa, [09:47] Larissa |
 | OBJ-04 | Nenhuma notificação perdida | Eventos que não terminam entregues nem na fila de falhas | **0** | [09:15] Diego, [09:18] Diego |
@@ -61,7 +61,7 @@ Acompanhamento sem meta nesta fase: volume de polling dos três clientes em `GET
 | **Dashboard visual** para o cliente ver seus webhooks | Descartado nesta fase; projeto separado do time de frontend | [09:39] Marcos, [09:40] Larissa |
 | **Rate limiting** de envio por cliente | Não entra; observar em produção e decidir depois | [09:38] Diego, [09:39] Larissa |
 | **Webhooks de entrada** (cliente enviando para a plataforma) | Descartado: o fluxo é só de saída | [09:02] Marcos, [09:03] Sofia |
-| **Garantia de ordem global** entre pedidos e **escala para múltiplos workers** | Não entra; ordem garantida só por pedido, com um único worker | [09:13] Larissa, [09:14] Marcos |
+| **Garantia de ordem global** entre pedidos e **escala para múltiplos workers** | Não entra; ordem garantida só por pedido, com um único worker | [09:12] Diego, [09:13] Diego, [09:13] Larissa, [09:14] Marcos |
 | **Garantia de entrega exatamente uma vez** | Descartado; o cliente deduplica | [09:25] Diego |
 | **Arquivamento** de notificações antigas | Fora desta feature | [09:08] Diego |
 | **Permissões mais restritas** para o cadastro de webhooks | Adiado ("mais pra frente") | [09:37] Sofia |
@@ -85,7 +85,7 @@ Acompanhamento sem meta nesta fase: volume de polling dos três clientes em `GET
 | RF-12 | Notificações não entregues são retentadas automaticamente em intervalos crescentes (1 min, 5 min, 30 min, 2 h, 12 h). | [09:15] Diego, [09:17] Larissa |
 | RF-13 | Notificações que esgotam as tentativas ficam registradas numa fila de falhas, com conteúdo e motivo. | [09:18] Diego |
 | RF-14 | Um administrador reenvia uma notificação da fila de falhas; usuários sem perfil de administrador não podem; quem reenviou fica registrado. | [09:18] Diego, [09:36] Sofia, [09:36] Larissa |
-| RF-15 | O usuário consulta as últimas 100 entregas de um webhook, com sucesso ou falha, conteúdo enviado, resposta recebida e tempo de resposta. | [09:34] Marcos |
+| RF-15 | O usuário consulta os últimos 100 envios de um webhook (cada retentativa conta como um envio), com sucesso ou falha, conteúdo enviado, resposta recebida e tempo de resposta. | [09:34] Marcos |
 | RF-16 | URLs que não usam HTTPS são recusadas no cadastro e na edição. | [09:23] Sofia |
 
 ## 7. Requisitos não funcionais
@@ -99,7 +99,7 @@ Acompanhamento sem meta nesta fase: volume de polling dos três clientes em `GET
 | RNF-05 | **Timeout** de 10 s por tentativa de entrega. | [09:42] Diego |
 | RNF-06 | **Tamanho**: notificação limitada a 64 KB; acima disso, não é enviada e gera erro. | [09:24] Larissa |
 | RNF-07 | **Segurança**: HTTPS obrigatório; HMAC-SHA256; secret única por webhook, nunca global. | [09:20] Sofia, [09:21] Sofia, [09:23] Sofia |
-| RNF-08 | **Ordem**: garantida apenas por pedido e enquanto houver um único processador. | [09:13] Larissa |
+| RNF-08 | **Ordem**: garantida apenas por pedido e enquanto houver um único processador; durante retentativas, uma notificação posterior do mesmo pedido pode chegar antes (limitação em análise, RFC Q-10). | [09:13] Larissa |
 | RNF-09 | **Operação**: o envio roda em processo separado da API, para que reinícios de um não afetem o outro. | [09:11] Diego |
 | RNF-10 | **Sem infraestrutura nova** e com os padrões atuais do projeto (módulos, erros, logs). | [09:07] Diego, [09:30] Larissa |
 | RNF-11 | **Auditoria**: reenvios manuais registram o usuário responsável. | [09:36] Sofia |
@@ -123,7 +123,7 @@ Acompanhamento sem meta nesta fase: volume de polling dos três clientes em `GET
 | Sessão de revisão do design com Bruno e Diego antes de começar a codar | Processo | [09:50] Larissa |
 | Documentação de integração no portal de desenvolvedor, com destaque para deduplicação | Produto (Marcos) | [09:26] Marcos, [09:40] Marcos |
 | Confirmação do prazo com a Atlas e atualização dos clientes | Comercial (Marcos) | [09:47] Marcos, [09:49] Marcos |
-| Fluxo de mudança de status existente (`src/modules/orders/order.service.ts`) e usuários com perfil `ADMIN` (`prisma/schema.prisma`) | Sistema | [09:40] Bruno, [09:36] Larissa |
+| Fluxo de mudança de status de pedidos e perfil de administrador já existentes no OMS | Sistema | [09:40] Bruno, [09:36] Larissa |
 | Novo processo de envio implantado e mantido no ar pela operação | Infraestrutura | [09:11] Larissa |
 
 ## 10. Riscos e mitigação
@@ -152,11 +152,11 @@ Os critérios técnicos verificáveis estão em [FDD, seção 12](FDD.md#12-crit
 
 ## 12. Estratégia de testes e validação
 
-| Camada | O que validar | Como |
+| Frente | O que precisa ficar provado | Responsável |
 | --- | --- | --- |
-| Unitária | Assinatura, cálculo do próximo intervalo de retry, montagem da notificação, filtro por status | Vitest, como já configurado em `vitest.config.ts` |
-| Integração (API + banco) | Cadastro e validações; geração da notificação junto da mudança de status e ausência dela quando a mudança falha; permissão de administrador no reenvio | Vitest + Supertest com MySQL, no padrão de `tests/orders.test.ts` |
-| Ponta a ponta | Processo de envio contra um receptor HTTP de teste: entrega, timeout, retentativas, fila de falhas, reenvio | Receptor local controlado pelo teste |
-| Segurança | HMAC, geração e rotação de secret, ausência de secrets em logs | Revisão dedicada da Sofia, 2 dias úteis antes do deploy ([09:46] Sofia) |
-| Regressão | Fluxo de pedidos existente continua igual | Suíte atual (`npm test`) |
-| Validação de produto | Métricas da seção 4 após a entrada em produção | Acompanhamento dos indicadores de latência e entrega definidos no [FDD](FDD.md#9-observabilidade) |
+| Testes automatizados | Cada requisito funcional da seção 6 tem teste automatizado, incluindo os caminhos de falha (cliente fora do ar, URL sem HTTPS, operador tentando reenviar) | Engenharia; detalhamento técnico nos [critérios do FDD](FDD.md#12-critérios-de-aceite-técnicos) |
+| Ponta a ponta | Uma mudança de status chega a um receptor de teste com assinatura válida, e as retentativas e a fila de falhas se comportam como descrito | Engenharia |
+| Segurança | Assinatura, geração e rotação de secret revisadas antes do deploy | Sofia, com pelo menos 2 dias úteis ([09:46] Sofia) |
+| Regressão | O fluxo de pedidos atual continua funcionando igual | Engenharia (suíte de testes existente) |
+| Documentação ao cliente | Portal de desenvolvedor explica assinatura e deduplicação antes da ativação | Marcos ([09:26] Marcos) |
+| Validação de produto | Metas da seção 4 acompanhadas após a entrada em produção | Marcos e Larissa, com os indicadores do [FDD](FDD.md#9-observabilidade) |
