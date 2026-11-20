@@ -296,6 +296,12 @@ O prefixo `whsec_` no exemplo é ilustrativo; formato e tamanho da secret ficam 
 
 Origem: [09:33] Bruno.
 
+Request:
+```http
+GET /api/v1/webhooks?customerId=4f6c2a7e-1b9d-4c3e-9a51-0d8e7f2b6c11&page=1&pageSize=20
+Authorization: Bearer eyJhbGciOi...
+```
+
 Response `200 OK` (formato de `paginated` em `src/shared/http/response.ts`; sem secret):
 ```json
 {
@@ -325,11 +331,26 @@ Response `200 OK` (formato de `paginated` em `src/shared/http/response.ts`; sem 
 Origem: [09:33] Bruno.
 
 Request (todos os campos opcionais, pelo menos um obrigatório; `secret` e `customerId` não são editáveis):
-```json
+```http
+PATCH /api/v1/webhooks/b7a1d3e2-5c4f-4e8a-9b06-2f1e3d4c5a69
+Authorization: Bearer eyJhbGciOi...
+Content-Type: application/json
+
 { "events": ["PAID", "SHIPPED", "DELIVERED"], "active": false }
 ```
 
-Response `200 OK`: o recurso atualizado, no mesmo formato de um item da listagem.
+Response `200 OK` (recurso atualizado, sem secret):
+```json
+{
+  "id": "b7a1d3e2-5c4f-4e8a-9b06-2f1e3d4c5a69",
+  "customerId": "4f6c2a7e-1b9d-4c3e-9a51-0d8e7f2b6c11",
+  "url": "https://hooks.atlascomercial.com.br/oms",
+  "events": ["PAID", "SHIPPED", "DELIVERED"],
+  "active": false,
+  "createdAt": "2026-11-19T12:00:00.000Z",
+  "updatedAt": "2026-11-19T15:30:00.000Z"
+}
+```
 
 | Status | Quando |
 | --- | --- |
@@ -344,7 +365,13 @@ Semântica: mudanças valem para eventos **inseridos depois** da edição, pois 
 
 Origem: [09:33] Bruno.
 
-Request: sem corpo. Response `204 No Content`.
+Request (sem corpo):
+```http
+DELETE /api/v1/webhooks/b7a1d3e2-5c4f-4e8a-9b06-2f1e3d4c5a69
+Authorization: Bearer eyJhbGciOi...
+```
+
+Response `204 No Content` (sem corpo).
 
 | Status | Quando |
 | --- | --- |
@@ -355,7 +382,13 @@ Request: sem corpo. Response `204 No Content`.
 
 Origem: [09:21] Sofia. O caminho é **(proposta)**; a reunião definiu apenas "endpoint pro cliente conseguir pedir nova secret pela API".
 
-Request: sem corpo. Response `200 OK`:
+Request (sem corpo):
+```http
+POST /api/v1/webhooks/b7a1d3e2-5c4f-4e8a-9b06-2f1e3d4c5a69/rotate-secret
+Authorization: Bearer eyJhbGciOi...
+```
+
+Response `200 OK`:
 ```json
 {
   "id": "b7a1d3e2-5c4f-4e8a-9b06-2f1e3d4c5a69",
@@ -374,6 +407,12 @@ Semântica: a secret atual vira `previousSecret`, com validade de 24 h; uma nova
 ### 6.6 `GET /api/v1/webhooks/:id/deliveries`: histórico de entregas
 
 Origem: [09:34] Marcos. Retorna as 100 tentativas de envio mais recentes (cada retentativa é um envio e conta como um item), da mais nova para a mais antiga.
+
+Request:
+```http
+GET /api/v1/webhooks/b7a1d3e2-5c4f-4e8a-9b06-2f1e3d4c5a69/deliveries
+Authorization: Bearer eyJhbGciOi...
+```
 
 Response `200 OK`:
 ```json
@@ -416,7 +455,12 @@ Response `200 OK`:
 
 Origem: [09:18] Diego, [09:35] Diego, [09:36] Sofia.
 
-Request: sem corpo; JWT de usuário com role `ADMIN`.
+Request (sem corpo; JWT de usuário com role `ADMIN`):
+```http
+POST /api/v1/admin/webhooks/dead-letter/5d7f9a1c-3e5b-4d7f-9a1c-3e5b7d9f1a32/replay
+Authorization: Bearer eyJhbGciOi...
+```
+
 
 Response `202 Accepted` (o envio é assíncrono, feito pelo worker no próximo ciclo):
 ```json
