@@ -188,7 +188,7 @@ Referência cruzada entre cada item registrado no pacote de documentos e a sua o
 | ADR-001-ALT-01 | `docs/adrs/ADR-001-outbox-no-mysql.md` | Alternativa descartada | Redis Cluster é overengineering para time pequeno | TRANSCRICAO | [09:07] Diego |
 | ADR-001-REF | `docs/adrs/ADR-001-outbox-no-mysql.md` | Referência de código | Transação de `changeStatus` | CODIGO | `src/modules/orders/order.service.ts` |
 | ADR-002 | `docs/adrs/ADR-002-worker-separado-em-polling.md` | Decisão | Worker em processo separado | TRANSCRICAO | [09:11] Diego |
-| ADR-002-D2 | `docs/adrs/ADR-002-worker-separado-em-polling.md` | Decisão | Entry-point `src/worker.ts` e `npm run worker` | TRANSCRICAO | [09:11] Larissa |
+| ADR-002-D2 | `docs/adrs/ADR-002-worker-separado-em-polling.md` | Decisão | Entry-point `src/worker.ts` (novo, a criar) e `npm run worker` | TRANSCRICAO | [09:11] Larissa |
 | ADR-002-D3 | `docs/adrs/ADR-002-worker-separado-em-polling.md` | Decisão | Mesmo banco, mesma stack, outro processo | TRANSCRICAO | [09:11] Diego |
 | ADR-002-ALT-01 | `docs/adrs/ADR-002-worker-separado-em-polling.md` | Alternativa descartada | Trigger do banco (Bruno perguntou) | TRANSCRICAO | [09:09] Bruno |
 | ADR-002-TO | `docs/adrs/ADR-002-worker-separado-em-polling.md` | Trade-off | Latência mínima de 2 s aceita | TRANSCRICAO | [09:10] Marcos |

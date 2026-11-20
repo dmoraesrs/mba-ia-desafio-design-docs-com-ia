@@ -38,7 +38,7 @@ Restrições técnicas que moldam o desenho:
 **Incluso**
 - Tabelas `webhook_endpoints`, `webhook_outbox`, `webhook_deliveries`, `webhook_dead_letter`.
 - `publishWebhookEvent(tx, order, fromStatus, toStatus)` chamada em `changeStatus`.
-- Worker `src/worker.ts` + processador `src/modules/webhooks/webhook.processor.ts`.
+- Worker `src/worker.ts` (novo, a criar) + processador `src/modules/webhooks/webhook.processor.ts` (novo, a criar).
 - Endpoints: criar, listar, editar, remover webhook; rotacionar secret; histórico de entregas; replay de DLQ.
 - Assinatura HMAC-SHA256, headers de entrega, timeout, retry, DLQ.
 
@@ -522,7 +522,7 @@ Geração de secret **(proposta, sujeita à revisão da Sofia)**: `crypto.random
 
 A reunião nomeou `WEBHOOK_NOT_FOUND`, `WEBHOOK_INVALID_URL` e `WEBHOOK_SECRET_REQUIRED` "etc." e fixou o prefixo ([09:28] Bruno, [09:29] Larissa). Os demais códigos da tabela são **(proposta)**, cada um derivado da regra indicada na coluna Origem.
 
-Classes novas em `src/modules/webhooks/webhook.errors.ts`, estendendo as de `src/shared/errors/http-errors.ts` (que aceitam `code` customizado em `BadRequestError`, `ConflictError` e `UnprocessableEntityError`) ou `AppError` diretamente quando a base fixa o código (caso de `NotFoundError`, que sempre usa `NOT_FOUND`).
+Classes novas em `src/modules/webhooks/webhook.errors.ts` (novo, a criar), estendendo as de `src/shared/errors/http-errors.ts` (que aceitam `code` customizado em `BadRequestError`, `ConflictError` e `UnprocessableEntityError`) ou `AppError` diretamente quando a base fixa o código (caso de `NotFoundError`, que sempre usa `NOT_FOUND`).
 
 | Código | HTTP | Onde ocorre | Classe proposta | Retentável? | Origem |
 | --- | --- | --- | --- | --- | --- |
@@ -593,10 +593,10 @@ O worker usa `logger.child({ component: 'webhook-worker' })`. Os caminhos `*.sec
 | `src/shared/errors/http-errors.ts` e `src/shared/errors/app-error.ts` | Base das classes `Webhook*Error` (seção 7). `BadRequestError`, `ConflictError` e `UnprocessableEntityError` já aceitam `code`; para 404 com código próprio, estende-se `AppError`, porque `NotFoundError` fixa `NOT_FOUND`. |
 | `src/middlewares/error.middleware.ts` | Sem alteração: o ramo `err instanceof AppError` já serializa `statusCode`, `errorCode` e `details` das novas classes ([09:29] Bruno). |
 | `src/middlewares/auth.middleware.ts` | `authenticate` em todas as rotas do módulo (como em `src/modules/orders/order.routes.ts`); `requireRole('ADMIN')` no replay, como já é feito em `src/modules/users/user.routes.ts` ([09:36] Larissa). |
-| `src/middlewares/validate.middleware.ts` | Valida body/query/params com os schemas de `src/modules/webhooks/webhook.schemas.ts`. A regra `https` vive num schema Zod exportado (`httpsUrlSchema`, [09:23] Sofia), aplicado pelo service para lançar `WEBHOOK_INVALID_URL` **(proposta)**, porque este middleware converte toda falha de schema em `VALIDATION_ERROR`. |
+| `src/middlewares/validate.middleware.ts` | Valida body/query/params com os schemas de `src/modules/webhooks/webhook.schemas.ts` (novo, a criar). A regra `https` vive num schema Zod exportado (`httpsUrlSchema`, [09:23] Sofia), aplicado pelo service para lançar `WEBHOOK_INVALID_URL` **(proposta)**, porque este middleware converte toda falha de schema em `VALIDATION_ERROR`. |
 | `src/routes/index.ts` | Registra `router.use('/webhooks', buildWebhookRouter(...))` e `router.use('/admin/webhooks', buildWebhookAdminRouter(...))`; o tipo `Controllers` ganha `webhooks` e `webhooksAdmin`. |
 | `src/app.ts` | `buildControllers` instancia `WebhookRepository`, `WebhookService` e os controllers, no mesmo estilo dos demais módulos. |
-| `src/server.ts` | Modelo para `src/worker.ts`: bootstrap assíncrono, `logger.fatal` em falha, `SIGINT`/`SIGTERM` com `prisma.$disconnect()` ([09:11] Larissa). |
+| `src/server.ts` | Modelo para `src/worker.ts` (novo, a criar): bootstrap assíncrono, `logger.fatal` em falha, `SIGINT`/`SIGTERM` com `prisma.$disconnect()` ([09:11] Larissa). |
 | `src/config/database.ts` | O worker chama `createPrismaClient()` (já exportada) para ter sua própria instância com a mesma `DATABASE_URL` ([09:30] Bruno). |
 | `src/config/env.ts` | Novas variáveis no `envSchema`: `WEBHOOK_POLL_INTERVAL_MS` (padrão 2000), `WEBHOOK_HTTP_TIMEOUT_MS` (padrão 10000), `WEBHOOK_BATCH_SIZE` (padrão 20, proposta). `.env.example` recebe os nomes. |
 | `src/shared/logger/index.ts` | Inclusão de `*.secret` e `*.previousSecret` em `redactPaths`. |

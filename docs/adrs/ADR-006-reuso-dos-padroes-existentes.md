@@ -25,7 +25,7 @@ A feature introduz um domínio novo e um processo novo (worker). Sem uma decisã
 
 Reusar ao máximo o que existe: `AppError`, Pino, error middleware, padrão de módulos, padrão de schemas Zod e padrão de códigos de erro. Webhook é um módulo igual aos outros ([09:30] Larissa). Concretamente:
 
-1. Novo módulo `src/modules/webhooks/` com controller, service, repository, routes e schemas ([09:27] Bruno).
+1. Novo módulo `src/modules/webhooks/` (a criar) com controller, service, repository, routes e schemas ([09:27] Bruno).
 2. Erros do módulo estendem as classes de `src/shared/errors/` e usam códigos com prefixo `WEBHOOK_`, como `WEBHOOK_NOT_FOUND`, `WEBHOOK_INVALID_URL`, `WEBHOOK_SECRET_REQUIRED` ([09:28] Bruno, [09:29] Larissa).
 3. Logs via o `logger` Pino existente, sem biblioteca nova ([09:29] Bruno). O error middleware trata os novos erros sem alteração ([09:29] Bruno).
 4. Replay da DLQ protegido com `requireRole('ADMIN')` ([09:36] Larissa).
